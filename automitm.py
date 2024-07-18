@@ -133,9 +133,10 @@ def decompile_base_apk(package_name, destination_dir):
         print(output_path)
 
         # subprocess.run(['apktool', 'd', '-f', '-r', '-s', base_apk_path, '-o', output_path])
-        subprocess.run(['java', '-jar', 'C:\\Users\\xten\\Desktop\\sign\\apktool_2.4.0.jar', 'd', '-f', '-r', '-s', base_apk_path, '-o', output_path])
+        # subprocess.run(['java', '-jar', 'C:\\Users\\xten\\Desktop\\sign\\apktool_2.4.0.jar', 'd', '-f', '-r', '-s', base_apk_path, '-o', output_path])
+        # subprocess.run(['java', '-jar', 'C:\\Users\\bsj\\OneDrive - 유한대학교\\바탕 화면\\X10\\apktool_2.9.3.jar', 'd', '-f', '-r', '-s', base_apk_path, '-o', output_path])
 
-
+        subprocess.run(['java', '-jar', 'C:\\Users\\xten\\Desktop\\sign\\apktool_2.4.0.jar', 'd', '-f', '-s', base_apk_path, '-o', output_path])
 
 
         print(f"base.apk 디컴파일 완료: {output_path}")
@@ -159,6 +160,9 @@ def main():
 
       # base.apk 파일 디컴파일
     decompile_base_apk(package_name, destination_dir)
+
+
+
 
 if __name__ == "__main__":
     main()
