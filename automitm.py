@@ -64,7 +64,9 @@ def get_apk_paths(package_name):
 def create_package_directory(package_name):
     try:
         # 첫 사용전 testing폴더 경로 바꾸기
-        base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
+        # base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
+        base_dir = "C:\\Users\\xten\\Desktop\\testing"
+
         package_dir = os.path.join(base_dir, package_name)
         os.makedirs(package_dir, exist_ok=True)
         print(f"{package_dir} 폴더가 생성되었습니다.")
@@ -100,17 +102,43 @@ def decompile_base_apk(package_dir):
         print(f"{base_apk_path} 파일을 찾을 수 없습니다.")
         raise e
 
+def decompile_base_apk_without_r(package_dir):
+    try:
+        base_apk_path = os.path.join(package_dir, "base.apk")
+        print(base_apk_path)
+        output_path = f"{package_dir}2"
+        print(output_path)
+        subprocess.run(['java', '-jar', 'C:\\Windows\\apktool.jar', 'd', '-f', '-s', base_apk_path, '-o', output_path], check=True)
+        print(f"base.apk 디컴파일 완료: {output_path}")
+        return output_path
+    except subprocess.CalledProcessError as e:
+        print(f"{base_apk_path} 디컴파일 중 오류 발생: {e}")
+        raise e
+    except Exception as e:
+        print(f"{base_apk_path} 파일을 찾을 수 없습니다.")
+        raise e
+
+
 def change_network_security_config(output_path):
     try:
-        res_xml_path = os.path.join(output_path, "res", "xml")
-        network_security_config_path = "C:\\Users\\BSJ\\Desktop\\network_security_config\\network_security_config.xml"
+        network_security_config_path = os.path.join(output_path, "res", "xml", "network_security_config.xml")
+
+        #변조된 파일 경로
+        modified_network_security_config_path = "C:\\Users\\xten\\Desktop\\network_security_config\\network_security_config.xml"
+
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_path):
             raise FileNotFoundError(f"{network_security_config_path} 파일을 찾을 수 없습니다.")
-        shutil.copy(network_security_config_path, res_xml_path)
-        print(f"network_security_config.xml 파일이 교체되었습니다: {res_xml_path}")
+        
+
+        if not os.path.exists(modified_network_security_config_path):
+            raise FileNotFoundError(f"{modified_network_security_config_path} 파일을 찾을 수 없습니다.")
+
+
+        shutil.copy(modified_network_security_config_path, network_security_config_path)
+        print(f"network_security_config.xml 파일이 교체되었습니다")
     except PermissionError as e:
-        print(f"{network_security_config_path} 파일 복사 중 오류 발생: {e}")
+        print(f"{modified_network_security_config_path} 파일 복사 중 오류 발생: {e}")
         raise e
     except FileNotFoundError as e:
         print(e)
@@ -118,6 +146,43 @@ def change_network_security_config(output_path):
     except Exception as e:
         print("유효하지 않은 output_path입니다.")
         raise e
+
+def change_network_security_config_without_r(output_path):
+    try:
+        network_security_config_path = os.path.join(output_path, "res", "xml", "network_security_config.xml")
+
+        #변조된 파일 경로
+        modified_network_security_config_path = "C:\\Users\\xten\\Desktop\\network_security_config_without_r\\network_security_config.xml"
+
+        # 파일 존재 여부 확인
+        if not os.path.exists(network_security_config_path):
+            raise FileNotFoundError(f"{network_security_config_path} 파일을 찾을 수 없습니다.")
+        
+
+        if not os.path.exists(modified_network_security_config_path):
+            raise FileNotFoundError(f"{modified_network_security_config_path} 파일을 찾을 수 없습니다.")
+
+
+        shutil.copy(modified_network_security_config_path, network_security_config_path)
+        print(f"network_security_config.xml 파일이 교체되었습니다")
+    except PermissionError as e:
+        print(f"{modified_network_security_config_path} 파일 복사 중 오류 발생: {e}")
+        raise e
+    except FileNotFoundError as e:
+        print(e)
+        raise e
+    except Exception as e:
+        print("유효하지 않은 output_path입니다.")
+        raise e
+
+
+def remove_decompile_fail_output_path(output_path):
+    try:
+        os.remove(output_path)
+    except Exception as e:
+        print("알수 없는 이유로 폴더 삭제에 실패하였습니다")
+        raise e
+        
 
 def recompile_base_apk(output_path, package_dir):
     try:
@@ -141,6 +206,7 @@ def recompile_base_apk(output_path, package_dir):
     except Exception as e:
         print(f"{base_apk_path} 파일 삭제 중 오류 발생: {e}")
         raise e
+
 
 def sign_apks(package_dir):
     for file in os.listdir(package_dir):
@@ -216,8 +282,19 @@ def main():
             # network_security_config.xml 파일 교체
             change_network_security_config(output_path)
 
-            # base.apk 파일 리컴파일
-            recompile_base_apk(output_path, package_dir)
+            try:
+                # base.apk 파일 리컴파일
+                recompile_base_apk(output_path, package_dir)
+            except:
+                print("--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션 없이 재디컴파일")
+                remove_decompile_fail_output_path(output_path)
+
+                output_path = decompile_base_apk_without_r(package_dir)
+
+                change_network_security_config_without_r(output_path)
+
+                recompile_base_apk(output_path, package_dir)
+
 
             # APK 파일 서명
             sign_apks(package_dir)
