@@ -3,6 +3,10 @@ import subprocess
 import os
 import shutil
 import sys
+import excelFunc
+
+
+error = 'none'
 
 def get_apk_paths(package_name):
     try:
@@ -64,8 +68,8 @@ def get_apk_paths(package_name):
 def create_package_directory(package_name):
     try:
         # 첫 사용전 testing폴더 경로 바꾸기
-        # base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
-        base_dir = "C:\\Users\\xten\\Desktop\\testing"
+        base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
+        # base_dir = "C:\\Users\\xten\\Desktop\\testing"
 
         package_dir = os.path.join(base_dir, package_name)
         os.makedirs(package_dir, exist_ok=True)
@@ -124,7 +128,8 @@ def change_network_security_config(output_path):
         network_security_config_path = os.path.join(output_path, "res", "xml", "network_security_config.xml")
 
         #변조된 파일 경로
-        modified_network_security_config_path = "C:\\Users\\xten\\Desktop\\network_security_config\\network_security_config.xml"
+        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
+        # modified_network_security_config_path = "C:\\Users\\xten\\Desktop\\network_security_config\\network_security_config.xml"
 
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_path):
@@ -152,6 +157,8 @@ def change_network_security_config_without_r(output_path):
         network_security_config_path = os.path.join(output_path, "res", "xml", "network_security_config.xml")
 
         #변조된 파일 경로
+        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config_without_r\network_security_config.xml"
+
         modified_network_security_config_path = "C:\\Users\\xten\\Desktop\\network_security_config_without_r\\network_security_config.xml"
 
         # 파일 존재 여부 확인
@@ -191,9 +198,17 @@ def recompile_base_apk(output_path, package_dir):
         print("리컴파일에 성공하였습니다.")
     except subprocess.CalledProcessError as e:
         print("리컴파일에 실패했습니다. 프로그램을 종료합니다.")
+
+        global error
+        error = '리컴파일 실패'
+
         raise e
     except Exception as e:
         print("디컴파일된 apk 파일 경로를 찾지 못하였습니다. 프로그램을 종료합니다")
+
+        # global error
+        # error = '리컴파일 실패'
+
         raise e
     # 리컴파일 완료 후 base.apk 파일 삭제
     try:
@@ -201,7 +216,7 @@ def recompile_base_apk(output_path, package_dir):
         os.remove(base_apk_path)
         print(f"{base_apk_path} 파일이 삭제되었습니다.")
     except FileNotFoundError as e:
-        print(f"{base_apk_path} 파일 삭제 중 오류 발생: {e}")
+        print(f"{base_apk_path} 파일을 찾지 못하였습니다: {e}")
         raise e
     except Exception as e:
         print(f"{base_apk_path} 파일 삭제 중 오류 발생: {e}")
@@ -217,6 +232,11 @@ def sign_apks(package_dir):
                 print(f"{file} 파일 서명 완료.")
             except subprocess.CalledProcessError as e:
                 print(f"{file} 파일 서명 실패.")
+
+                global error
+                error = '서명 실패'
+        
+
                 raise e
 
 def install_signed_apks(package_name, package_dir):
@@ -237,35 +257,47 @@ def install_signed_apks(package_name, package_dir):
         print("서명된 APK 파일 설치 완료.")
     except subprocess.CalledProcessError as e:
         print("서명된 APK 파일 설치 실패.")
+
+        global error
+        error = '설치 실패'
+
         raise e
     except Exception as e:
         print("설치할 서명된 APK 파일을 찾을 수 없습니다.")
+
+        # global error
+        # error = '설치 실패'
+
         raise e
 
-def keyChecking():
-    key = input("프로그램을 재실행 '1' 입력 \n프로그램 종료 '0' 입력\n키 입력 : ")
-    print(key)
-    try:
-        key = int(key)
-        if key == 1:
-            return 1
-        elif key == 0:
-            print("0입력")
-            sys.exit(0)  # 프로그램 종료
-        else:
-            print("else 실행됨")
-            return keyChecking()
-    except ValueError:
-        print("숫자 0 또는 1만 입력해주세요.")
-        return keyChecking()
-    
+# def keyChecking():
+#     key = input("프로그램을 재실행 '1' 입력 \n프로그램 종료 '0' 입력\n키 입력 : ")
+#     print(key)
+#     try:
+#         key = int(key)
+#         if key == 1:
+#             return 1
+#         elif key == 0:
+#             print("0입력")
+#             sys.exit(0)  # 프로그램 종료
+#         else:
+#             print("else 실행됨")
+#             raise
+#     except ValueError:
+#         print("숫자 0 또는 1만 입력해주세요.")
+#         return keyChecking()
+
+
 def main():
 
-    key = 1
-
-    while key:
+    global error
+    error = 'none'    
+    startPoint, endPoint, ws = excelFunc.excelStartPoint()
+    
+    for row in range(startPoint, endPoint + 1, 1):
         try: 
-            package_name = input("패키지 이름을 입력하세요: ")
+            app_name = ws[f'A{row}'].value
+            package_name = ws[f'B{row}'].value
 
             # APK 경로 가져오기
             apk_files = get_apk_paths(package_name)
@@ -302,10 +334,14 @@ def main():
             # 서명된 APK 파일 설치
             install_signed_apks(package_name, package_dir)
 
-            keyChecking()
-        except:
-            print("함수 오류")
-            key = keyChecking()
+            
+            excelFunc.excelEndPoint(startPoint, endPoint, app_name, None, None, None)
+            print("결과는 엑셀으로")
+        except Exception as e:
+            print("-------------오류 발생-------------")
+            result = '아니오'
+            excelFunc.excelEndPoint(startPoint, endPoint, app_name, result, error, str(e))
+
 
     sys.exit(0)  # 프로그램 종료
 
