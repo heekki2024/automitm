@@ -4,12 +4,16 @@ import os
 import shutil
 import sys
 import excelFunc
+import xml.etree.ElementTree as ET
+
+#pip install openpyxl
 
 
 error = 'none'
 
 def get_apk_paths(package_name):
     try:
+        
         print("get_apk_paths 함수 실행중")
         # 패키지 경로 가져오기
         package_path = subprocess.run(['adb', 'shell', 'pm', 'list', 'packages', '-f', package_name], capture_output=True, text=True, check=True)
@@ -68,8 +72,8 @@ def get_apk_paths(package_name):
 def create_package_directory(package_name):
     try:
         # 첫 사용전 testing폴더 경로 바꾸기
-        base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
-        # base_dir = "C:\\Users\\xten\\Desktop\\testing"
+        # base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
+        base_dir = "C:\\Users\\xten\\Desktop\\testing"
 
         package_dir = os.path.join(base_dir, package_name)
         os.makedirs(package_dir, exist_ok=True)
@@ -82,13 +86,18 @@ def create_package_directory(package_name):
 def pull_apks(apk_files, package_dir, package_name):
     for apk_file in apk_files:
         try:
-            print("testing")
             print(f"{package_name} 패키지의 APK 파일을 추출합니다...")
             subprocess.run(['adb', 'pull', apk_file, package_dir], check=True)
             print("APK 파일 추출이 완료되었습니다.")
         except subprocess.CalledProcessError as e:
             print(f"파일 추출 실패")
             raise e
+        
+def merge_apks(package_dir):
+    try:
+        print("apk들을 merge 합니다...")
+        subprocess.run(['java', '-jar', r'C:\Windows\APKEditor-1.3.8.jar', 'm', '-i', package_dir , '-o', ], check=True)
+
 
 def decompile_base_apk(package_dir):
     try:
@@ -106,13 +115,13 @@ def decompile_base_apk(package_dir):
         print(f"{base_apk_path} 파일을 찾을 수 없습니다.")
         raise e
 
-def decompile_base_apk_without_r(package_dir):
+def decompile_base_apk_with_r(package_dir):
     try:
         base_apk_path = os.path.join(package_dir, "base.apk")
         print(base_apk_path)
         output_path = f"{package_dir}2"
         print(output_path)
-        subprocess.run(['java', '-jar', 'C:\\Windows\\apktool.jar', 'd', '-f', '-s', base_apk_path, '-o', output_path], check=True)
+        subprocess.run(['java', '-jar', 'C:\\Windows\\apktool.jar', 'd', '-f', '-r' '-s', base_apk_path, '-o', output_path], check=True)
         print(f"base.apk 디컴파일 완료: {output_path}")
         return output_path
     except subprocess.CalledProcessError as e:
@@ -122,26 +131,96 @@ def decompile_base_apk_without_r(package_dir):
         print(f"{base_apk_path} 파일을 찾을 수 없습니다.")
         raise e
 
-
-def change_network_security_config(output_path):
+def check_AndroidManifest(output_path):
     try:
-        network_security_config_path = os.path.join(output_path, "res", "xml", "network_security_config.xml")
+        AndroidManifest_path = os.path.join(output_path, "AndroidManifest.xml")
+
+        # AndroidManifest.xml 파일 파싱
+        tree = ET.parse(AndroidManifest_path)
+        root = tree.getroot()
+
+        # Android 네임스페이스 정의
+        android_ns = 'http://schemas.android.com/apk/res/android'
+
+        # 네임스페이스 등록
+        ET.register_namespace('android', android_ns)
+
+        #<application> 태그 찾기
+        application_tag = root.find('application')
+
+        if application_tag is None:
+            raise Exception("<application> 태그를 찾을 수 없습니다.")
+            
+        # android:networkSecurityConfig 옵션 확인
+        networkSecurityConfig_value = application_tag.get(f'{{{android_ns}}}networkSecurityConfig')
+        if networkSecurityConfig_value:
+            print(f"android:networkSecurityConfig 옵션이 있습니다. 값: {networkSecurityConfig_value}")
+
+            network_Security_Config_name = os.path.basename(networkSecurityConfig_value)
+            print(f"가장 하단 디렉토리 또는 파일 이름: {network_Security_Config_name}")
+
+            tree.write(AndroidManifest_path, encoding='utf-8', xml_declaration=True)
+
+            return True, network_Security_Config_name
+
+        else:
+            print("android:networkSecurityConfig 옵션이 없습니다.")
+
+            # android:usesCleartextTraffic 옵션 확인
+            usesCleartextTraffic_value = application_tag.get(f'{{{android_ns}}}usesCleartextTraffic')
+            if usesCleartextTraffic_value is not None:
+                print(f"android:usesCleartextTraffic 옵션이 있습니다. 값: {usesCleartextTraffic_value}")
+
+                del application_tag.attrib[f'{{{android_ns}}}usesCleartextTraffic']
+                print("android:usesCleartextTraffic 옵션이 제거되었습니다.")
+
+            else:
+                print("android:usesCleartextTraffic 옵션이 없습니다.")
+
+            # android:networkSecurityConfig 옵션 추가
+            application_tag.set(f'{{{android_ns}}}networkSecurityConfig', '@xml/network_security_config')
+            print("android:networkSecurityConfig 옵션이 추가되었습니다.")
+
+            tree.write(AndroidManifest_path, encoding='utf-8', xml_declaration=True)
+
+            return False
+
+
+
+
+    except ET.ParseError as e:
+        print(f"XML 파싱 오류: {e}")
+    except FileNotFoundError as e:
+        print(f"파일을 찾을 수 없습니다: {e}")
+    except Exception as e:
+        print(f"알 수 없는 오류: {e}")
+
+
+        if not os.path.exists(AndroidManifest_path):
+            raise FileNotFoundError(f"{AndroidManifest_path} 파일을 찾을 수 없습니다.")
+
+        
+            
+
+
+def copy_network_security_config(output_path):
+    try:
+        network_security_config_dir = os.path.join(output_path, "res", "xml")
 
         #변조된 파일 경로
-        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
-        # modified_network_security_config_path = "C:\\Users\\xten\\Desktop\\network_security_config\\network_security_config.xml"
+        # modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
+        modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config\network_security_config.xml"
 
         # 파일 존재 여부 확인
-        if not os.path.exists(network_security_config_path):
-            raise FileNotFoundError(f"{network_security_config_path} 파일을 찾을 수 없습니다.")
+        if not os.path.exists(network_security_config_dir):
+            raise FileNotFoundError(f"res\xml 폴더를 찾을 수 없습니다.")
         
-
         if not os.path.exists(modified_network_security_config_path):
-            raise FileNotFoundError(f"{modified_network_security_config_path} 파일을 찾을 수 없습니다.")
+            raise FileNotFoundError(f"변조된 network_security_config 파일을 찾을 수 없습니다.")
 
-
-        shutil.copy(modified_network_security_config_path, network_security_config_path)
-        print(f"network_security_config.xml 파일이 교체되었습니다")
+        
+        shutil.copy2(modified_network_security_config_path, network_security_config_dir)
+        print(f"network_security_config.xml 파일이 {network_security_config_dir}로 복사되었습니다.")
     except PermissionError as e:
         print(f"{modified_network_security_config_path} 파일 복사 중 오류 발생: {e}")
         raise e
@@ -152,14 +231,13 @@ def change_network_security_config(output_path):
         print("유효하지 않은 output_path입니다.")
         raise e
 
-def change_network_security_config_without_r(output_path):
+def change_network_security_config_with_r(output_path):
     try:
         network_security_config_path = os.path.join(output_path, "res", "xml", "network_security_config.xml")
 
         #변조된 파일 경로
-        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config_without_r\network_security_config.xml"
-
-        modified_network_security_config_path = "C:\\Users\\xten\\Desktop\\network_security_config_without_r\\network_security_config.xml"
+        # modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config_without_r\network_security_config.xml"
+        modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config_with_r\network_security_config.xml"
 
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_path):
@@ -270,23 +348,6 @@ def install_signed_apks(package_name, package_dir):
 
         raise e
 
-# def keyChecking():
-#     key = input("프로그램을 재실행 '1' 입력 \n프로그램 종료 '0' 입력\n키 입력 : ")
-#     print(key)
-#     try:
-#         key = int(key)
-#         if key == 1:
-#             return 1
-#         elif key == 0:
-#             print("0입력")
-#             sys.exit(0)  # 프로그램 종료
-#         else:
-#             print("else 실행됨")
-#             raise
-#     except ValueError:
-#         print("숫자 0 또는 1만 입력해주세요.")
-#         return keyChecking()
-
 
 def main():
 
@@ -296,6 +357,8 @@ def main():
     
     for row in range(startPoint, endPoint + 1, 1):
         try: 
+            print("\n\n\n\n-----FULL AUTO MITM 실행중-----\n\n\n\n")
+
             app_name = ws[f'A{row}'].value
             package_name = ws[f'B{row}'].value
 
@@ -311,8 +374,17 @@ def main():
             # base.apk 파일 디컴파일
             output_path = decompile_base_apk(package_dir)
 
-            # network_security_config.xml 파일 교체
-            change_network_security_config(output_path)
+            have_networkSecurityConfig,network_Security_Config_name = check_AndroidManifest(output_path)
+
+            if have_networkSecurityConfig == True:
+                
+            elif have_networkSecurityConfig == False:
+                # network_security_config.xml 파일 교체
+                copy_network_security_config(output_path)
+
+                recompile_base_apk(output_path, package_dir)
+
+
 
             try:
                 # base.apk 파일 리컴파일
@@ -321,9 +393,9 @@ def main():
                 print("--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션 없이 재디컴파일")
                 remove_decompile_fail_output_path(output_path)
 
-                output_path = decompile_base_apk_without_r(package_dir)
+                output_path = decompile_base_apk_with_r(package_dir)
 
-                change_network_security_config_without_r(output_path)
+                change_network_security_config_with_r(output_path)
 
                 recompile_base_apk(output_path, package_dir)
 
@@ -340,7 +412,10 @@ def main():
         except Exception as e:
             print("-------------오류 발생-------------")
             result = '아니오'
+            
             excelFunc.excelEndPoint(startPoint, endPoint, app_name, result, error, str(e))
+            # subprocess.run(['adb', 'uninstall', package_name], check=True)
+            print(f"{package_name} 패키지 삭제 완료.")
 
 
     sys.exit(0)  # 프로그램 종료
