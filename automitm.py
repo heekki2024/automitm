@@ -5,6 +5,11 @@ import shutil
 import sys
 import excelFunc
 import xml.etree.ElementTree as ET
+from tkinter import Tk, filedialog, messagebox
+
+
+
+CONFIG_FILE = 'config.ini'
 
 #pip install openpyxl
 
@@ -72,8 +77,8 @@ def get_apk_paths(package_name):
 def create_package_directory(package_name):
     try:
         # 첫 사용전 testing폴더 경로 바꾸기
-        # base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
-        base_dir = "C:\\Users\\xten\\Desktop\\testing"
+        base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
+        # base_dir = "C:\\Users\\xten\\Desktop\\testing"
 
         package_dir = os.path.join(base_dir, package_name)
         os.makedirs(package_dir, exist_ok=True)
@@ -251,14 +256,14 @@ def modify_network_security_config(network_Security_Config_name, output_path):
     except Exception as e:
         print(f"알 수 없는 오류: {e}")
         raise e
-         
+
 def copy_network_security_config(output_path):
     try:
         network_security_config_dir = os.path.join(output_path, "res", "xml")
 
         #변조된 파일 경로
-        # modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
-        modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config\network_security_config.xml"
+        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
+        # modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config\network_security_config.xml"
 
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_dir):
@@ -285,8 +290,8 @@ def copy_network_security_config_with_r(output_path):
         network_security_config_dir = os.path.join(output_path, "res", "xml")
 
         #변조된 파일 경로
-        # modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
-        modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config_with_r\network_security_config.xml"
+        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config_with_r\network_security_config.xml"
+        # modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config_with_r\network_security_config.xml"
 
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_dir):
@@ -307,13 +312,28 @@ def copy_network_security_config_with_r(output_path):
         print("유효하지 않은 output_path입니다.")
         raise e
 
+        
 def remove_decompile_fail_output_path(output_path):
     try:
-        os.remove(output_path)
-    except Exception as e:
-        print("알수 없는 이유로 폴더 삭제에 실패하였습니다")
+        if os.path.exists(output_path):
+            for root, dirs, files in os.walk(output_path, topdown=False):
+                for name in files:
+                    os.remove(os.path.join(root, name))
+                for name in dirs:
+                    os.rmdir(os.path.join(root, name))
+            os.rmdir(output_path)
+            print(f"{output_path} 폴더가 삭제되었습니다.")
+        else:
+            print(f"{output_path} 폴더가 존재하지 않습니다.")
+    except PermissionError as e:
+        print(f"{output_path} 폴더 삭제 중 권한 오류 발생: {e}")
         raise e
-        
+    except FileNotFoundError as e:
+        print(f"{output_path} 폴더를 찾을 수 없습니다: {e}")
+        raise e
+    except Exception as e:
+        print("알 수 없는 이유로 폴더 삭제에 실패하였습니다")
+        raise e
 
 def recompile_merged_apk(output_path, package_dir):
     try:
@@ -334,17 +354,6 @@ def recompile_merged_apk(output_path, package_dir):
         # error = '리컴파일 실패'
 
         raise e
-    # 리컴파일 완료 후 base.apk 파일 삭제
-    # try:
-    #     base_apk_path = os.path.join(package_dir, "base.apk")
-    #     os.remove(base_apk_path)
-    #     print(f"{base_apk_path} 파일이 삭제되었습니다.")
-    # except FileNotFoundError as e:
-    #     print(f"{base_apk_path} 파일을 찾지 못하였습니다: {e}")
-    #     raise e
-    # except Exception as e:
-    #     print(f"{base_apk_path} 파일 삭제 중 오류 발생: {e}")
-    #     raise e
 
 
 def sign_apks(package_dir):
@@ -352,7 +361,7 @@ def sign_apks(package_dir):
     #     if file.endswith(".apk"):
             built_apk_path = os.path.join(package_dir, "new_merged.apk")
             try:
-                subprocess.run(['java', '-jar', 'C:\\Windows\\uber-apk-signer-1.3.0.jar', '-a', built_apk_path, '--allowResign'], check=True)
+                subprocess.run(['java', '-jar', 'C:\\Windows\\uber-apk-signer-1.3.0.jar', '-a', built_apk_path], check=True)
                 print(f"new_merged.apk 파일 서명 완료.")
             except subprocess.CalledProcessError as e:
                 print(f"new_merged.apk 파일 서명 실패.")
@@ -398,10 +407,26 @@ def install_signed_apks(package_dir):
 
 
 def main():
+    # config = excelFunc.load_config()
+
+    config = excelFunc.load_config()
+
+    if not config == None:
+        input_path = config['PATHS']['input_path']
+        output_path = config['PATHS']['output_path']
+        print(f"사용할 입력 파일 경로: {input_path}")
+        print(f"사용할 출력 파일 경로: {output_path}")
+
+    
+    else:
+        excel_input_path, excel_output_path = excelFunc.set_paths_gui()
+        print(excel_input_path)
+        print(excel_output_path)
+
 
     global error
     error = 'none'    
-    startPoint, endPoint, ws = excelFunc.excelStartPoint()
+    startPoint, endPoint, ws = excelFunc.excelStartPoint(excel_input_path)
     
     for row in range(startPoint, endPoint + 1, 1):
         try: 
@@ -449,7 +474,7 @@ def main():
 
                     remove_decompile_fail_output_path(output_path)
 
-                    output_path = decompile_merged_apk_with_r(merged_apk_path)
+                    output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
 
                     copy_network_security_config_with_r(output_path)
 
@@ -466,13 +491,14 @@ def main():
             install_signed_apks(package_dir)
 
             
-            excelFunc.excelEndPoint(startPoint, endPoint, app_name, None, None, None)
+            excelFunc.excelEndPoint(excel_output_path, app_name, None, None, None)
             print("결과는 엑셀으로")
         except Exception as e:
             print("-------------오류 발생-------------")
+            print(e)
             result = '아니오'
             
-            excelFunc.excelEndPoint(startPoint, endPoint, app_name, result, error, str(e))
+            excelFunc.excelEndPoint(excel_output_path,app_name, result, error, str(e))
             # subprocess.run(['adb', 'uninstall', package_name], check=True)
             # print(f"{package_name} 패키지 삭제 완료.")
 
