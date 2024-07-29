@@ -74,11 +74,11 @@ def get_apk_paths(package_name):
                     apk_files.append(full_path)
     return apk_files
 
-def create_package_directory(package_name):
+def create_package_directory(package_name, base_dir):
     try:
         # 첫 사용전 testing폴더 경로 바꾸기
         # base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
-        base_dir = "C:\\Users\\xten\\Desktop\\testing"
+        # base_dir = "C:\\Users\\xten\\Desktop\\testing"
 
         package_dir = os.path.join(base_dir, package_name)
         os.makedirs(package_dir, exist_ok=True)
@@ -257,13 +257,13 @@ def modify_network_security_config(network_Security_Config_name, output_path):
         print(f"알 수 없는 오류: {e}")
         raise e
 
-def copy_network_security_config(output_path):
+def copy_network_security_config(output_path, modified_network_security_config_path):
     try:
         network_security_config_dir = os.path.join(output_path, "res", "xml")
 
         #변조된 파일 경로
-        # modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
-        modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config\network_security_config.xml"
+        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
+        # modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config\network_security_config.xml"
 
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_dir):
@@ -285,13 +285,13 @@ def copy_network_security_config(output_path):
         print("유효하지 않은 output_path입니다.")
         raise e
 
-def copy_network_security_config_with_r(output_path):
+def copy_network_security_config_with_r(output_path, network_security_config_dir):
     try:
         network_security_config_dir = os.path.join(output_path, "res", "xml")
 
         #변조된 파일 경로
-        # modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config_with_r\network_security_config.xml"
-        modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config_with_r\network_security_config.xml"
+        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config_with_r\network_security_config.xml"
+        # modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config_with_r\network_security_config.xml"
 
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_dir):
@@ -411,23 +411,40 @@ def main():
 
     config = excelFunc.load_config()
 
-    if not config == None:
-        input_path = config['PATHS']['input_path']
-        output_path = config['PATHS']['output_path']
-        print(f"사용할 입력 파일 경로: {input_path}")
-        print(f"사용할 출력 파일 경로: {output_path}")
+    if not config['PATHS']['input_path'] == '' and not config['PATHS']['output_path'] == '' and not config['PATHS']['base_path'] == '' and not config['PATHS']['network_security_config_path'] == '' and not config['PATHS']['network_security_config_with_r_path'] == '':
+        excel_input_path = config['PATHS']['input_path']
+        excel_output_path = config['PATHS']['output_path']
+        base_path = config['PATHS']['base_path']
+        network_security_config_path = config['PATHS']['network_security_config_path']    
+        network_security_config_with_r_path = config['PATHS']['network_security_config_with_r_path']
+
+        print(f"사용할 입력 파일 경로: {excel_input_path}")
+        print(f"사용할 출력 파일 경로: {excel_output_path}")
+        print(f"사용할 Base 폴더 경로: {base_path}")
+        print(f"사용할 network_security_config 경로: {network_security_config_path}")
+        print(f"사용할 network_security_config_with_r_path 경로: {network_security_config_with_r_path}")
 
     
     else:
-        excel_input_path, excel_output_path = excelFunc.set_paths_gui()
-        print(excel_input_path)
-        print(excel_output_path)
+        config = excelFunc.set_paths_gui()
+        excel_input_path = config['PATHS']['input_path']
+        excel_output_path = config['PATHS']['output_path']
+        base_path = config['PATHS']['base_path']
+        network_security_config_path = config['PATHS']['network_security_config_path']    
+        network_security_config_with_r_path = config['PATHS']['network_security_config_with_r_path']
 
+        print(f"사용할 입력 파일 경로: {excel_input_path}")
+        print(f"사용할 출력 파일 경로: {excel_output_path}")
+        print(f"사용할 Base 폴더 경로: {base_path}")
+        print(f"사용할 network_security_config 경로: {network_security_config_path}")
+        print(f"사용할 network_security_config_with_r_path 경로: {network_security_config_with_r_path}")
 
     global error
     error = 'none'    
     startPoint, endPoint, ws = excelFunc.excelStartPoint(excel_input_path)
     
+
+
     for row in range(startPoint, endPoint + 1, 1):
         try: 
             print("\n\n\n\n-----FULL AUTO MITM 실행중-----\n\n\n\n")
@@ -445,7 +462,7 @@ def main():
             apk_files = get_apk_paths(package_name)
 
             #APK를 담을 폴더 생성
-            package_dir = create_package_directory(package_name)
+            package_dir = create_package_directory(package_name, base_path)
 
             # APK 파일 추출
             pull_apks(apk_files, package_dir, package_name)
@@ -466,7 +483,7 @@ def main():
 
             elif have_networkSecurityConfig == False:
                 # network_security_config.xml 파일 교체
-                copy_network_security_config(output_path)
+                copy_network_security_config(output_path, network_security_config_path)
                 try:
                     recompile_merged_apk(output_path, package_dir)
                 except:
@@ -476,7 +493,7 @@ def main():
 
                     output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
 
-                    copy_network_security_config_with_r(output_path)
+                    copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
 
                     recompile_merged_apk(output_path, package_dir)
 
