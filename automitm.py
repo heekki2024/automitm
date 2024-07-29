@@ -77,8 +77,8 @@ def get_apk_paths(package_name):
 def create_package_directory(package_name):
     try:
         # 첫 사용전 testing폴더 경로 바꾸기
-        base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
-        # base_dir = "C:\\Users\\xten\\Desktop\\testing"
+        # base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
+        base_dir = "C:\\Users\\xten\\Desktop\\testing"
 
         package_dir = os.path.join(base_dir, package_name)
         os.makedirs(package_dir, exist_ok=True)
@@ -262,8 +262,8 @@ def copy_network_security_config(output_path):
         network_security_config_dir = os.path.join(output_path, "res", "xml")
 
         #변조된 파일 경로
-        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
-        # modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config\network_security_config.xml"
+        # modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
+        modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config\network_security_config.xml"
 
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_dir):
@@ -290,8 +290,8 @@ def copy_network_security_config_with_r(output_path):
         network_security_config_dir = os.path.join(output_path, "res", "xml")
 
         #변조된 파일 경로
-        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config_with_r\network_security_config.xml"
-        # modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config_with_r\network_security_config.xml"
+        # modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config_with_r\network_security_config.xml"
+        modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config_with_r\network_security_config.xml"
 
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_dir):
