@@ -32,13 +32,19 @@ def get_apk_paths(package_name):
         print("adb 명령어 실행 중 오류가 발생했습니다.")
         print(f"오류 코드: {e.returncode}")
         print(f"오류 메시지: {e.stderr}")
+        global error
+        error = '패키지 발견 실패'        
         raise e
     except ValueError as e:
         print(e)
+        error = '패키지 발견 실패'        
+
         raise e
     except Exception as e:
         print("예상치 못한 오류가 발생했습니다.")
         print(f"오류 메시지: {e}")
+        error = '패키지 발견 실패'        
+
         raise e
   
     # 결과에서 패키지 경로 필터링
@@ -124,8 +130,11 @@ def decompile_merged_apk(merged_apk_path, package_dir):
         return output_path
     except subprocess.CalledProcessError as e:
         print(f"{merged_apk_path} 디컴파일 중 오류 발생: {e}")
+        global error
+        error = '디컴파일 실패'
         raise e
     except Exception as e:
+        error = '디컴파일 실패'
         print(f"{merged_apk_path} 파일을 찾을 수 없습니다.")
         raise e
 
@@ -141,9 +150,12 @@ def decompile_merged_apk_with_r(merged_apk_path, package_dir):
         return output_path
     except subprocess.CalledProcessError as e:
         print(f"{merged_apk_path} 디컴파일 중 오류 발생: {e}")
+        global error
+        error = '디컴파일 실패 with r'        
         raise e
     except Exception as e:
         print(f"{merged_apk_path} 파일을 찾을 수 없습니다.")
+        error = '디컴파일 실패 with r'        
         raise e
 
 def check_AndroidManifest(output_path):
@@ -261,59 +273,65 @@ def copy_network_security_config(output_path, modified_network_security_config_p
     try:
         network_security_config_dir = os.path.join(output_path, "res", "xml")
 
-        #변조된 파일 경로
-        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config\network_security_config.xml"
-        # modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config\network_security_config.xml"
-
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_dir):
+            global error
+            error = 'copy_network_security_config 복사 및 붙여넣기 실패'
             raise FileNotFoundError(r"res\xml 폴더를 찾을 수 없습니다.")
         
+        
         if not os.path.exists(modified_network_security_config_path):
+            error = 'copy_network_security_config 복사 및 붙여넣기 실패'
             raise FileNotFoundError(f"변조된 network_security_config 파일을 찾을 수 없습니다.")
 
         
         shutil.copy2(modified_network_security_config_path, network_security_config_dir)
         print(f"network_security_config.xml 파일이 {network_security_config_dir}로 복사되었습니다.")
     except PermissionError as e:
+        error = 'copy_network_security_config 복사 및 붙여넣기 실패'
         print(f"{modified_network_security_config_path} 파일 복사 중 오류 발생: {e}")
         raise e
     except FileNotFoundError as e:
+        error = 'copy_network_security_config 복사 및 붙여넣기 실패'
         print(e)
         raise e
     except Exception as e:
+        error = 'copy_network_security_config 복사 및 붙여넣기 실패'
         print("유효하지 않은 output_path입니다.")
         raise e
 
-def copy_network_security_config_with_r(output_path, network_security_config_dir):
+def copy_network_security_config_with_r(output_path, modified_network_security_config_with_r_path):
     try:
         network_security_config_dir = os.path.join(output_path, "res", "xml")
 
-        #변조된 파일 경로
-        modified_network_security_config_path = r"C:\Users\BSJ\Desktop\network_security_config_with_r\network_security_config.xml"
-        # modified_network_security_config_path = r"C:\Users\xten\Desktop\network_security_config_with_r\network_security_config.xml"
 
         # 파일 존재 여부 확인
         if not os.path.exists(network_security_config_dir):
+            global error
+            error = 'copy_network_security_config_with_r 복사 및 붙여넣기 실패'
             raise FileNotFoundError(r"res\xml 폴더를 찾을 수 없습니다.")
         
-        if not os.path.exists(modified_network_security_config_path):
+        if not os.path.exists(modified_network_security_config_with_r_path):
+            error = 'copy_network_security_config_with_r 복사 및 붙여넣기 실패'
             raise FileNotFoundError(f"변조된 network_security_config 파일을 찾을 수 없습니다.")
  
-        shutil.copy2(modified_network_security_config_path, network_security_config_dir)
+        shutil.copy2(modified_network_security_config_with_r_path, network_security_config_dir)
         print(f"network_security_config.xml 파일이 {network_security_config_dir}로 복사되었습니다.")
     except PermissionError as e:
-        print(f"{modified_network_security_config_path} 파일 복사 중 오류 발생: {e}")
+        error = 'copy_network_security_config_with_r 복사 및 붙여넣기 실패'
+        print(f"{modified_network_security_config_with_r_path} 파일 복사 중 오류 발생: {e}")
         raise e
     except FileNotFoundError as e:
+        error = 'copy_network_security_config_with_r 복사 및 붙여넣기 실패'
         print(e)
         raise e
     except Exception as e:
+        error = 'copy_network_security_config_with_r 복사 및 붙여넣기 실패'
         print("유효하지 않은 output_path입니다.")
         raise e
 
         
-def remove_decompile_fail_output_path(output_path):
+def remove_build_fail_output_path(output_path):
     try:
         if os.path.exists(output_path):
             for root, dirs, files in os.walk(output_path, topdown=False):
@@ -327,12 +345,18 @@ def remove_decompile_fail_output_path(output_path):
             print(f"{output_path} 폴더가 존재하지 않습니다.")
     except PermissionError as e:
         print(f"{output_path} 폴더 삭제 중 권한 오류 발생: {e}")
+        global error
+        error = '빌드 실패 폴더 삭제 실패'
         raise e
     except FileNotFoundError as e:
         print(f"{output_path} 폴더를 찾을 수 없습니다: {e}")
+        error = '빌드 실패 폴더 삭제 실패'
+
         raise e
     except Exception as e:
         print("알 수 없는 이유로 폴더 삭제에 실패하였습니다")
+        error = '빌드 실패 폴더 삭제 실패'
+
         raise e
 
 def recompile_merged_apk(output_path, package_dir):
@@ -350,8 +374,8 @@ def recompile_merged_apk(output_path, package_dir):
     except Exception as e:
         print("디컴파일된 apk 파일 경로를 찾지 못하였습니다. 프로그램을 종료합니다")
 
-        # global error
-        # error = '리컴파일 실패'
+
+        error = '리컴파일 실패'
 
         raise e
 
@@ -378,6 +402,9 @@ def remove_app(package_name):
         print(f"{package_name} 패키지 삭제 완료.")
     except subprocess.CalledProcessError as e:
         print(f"{package_name} 패키지 삭제 실패.")
+        global error
+        error = '삭제 실패'
+
         raise e    
 
 def install_signed_apks(package_dir):
@@ -400,54 +427,31 @@ def install_signed_apks(package_dir):
     except Exception as e:
         print("설치할 서명된 APK 파일을 찾을 수 없습니다.")
 
-        # global error
-        # error = '설치 실패'
+
+        error = '설치 실패'
 
         raise e
 
-
+global e
 def main():
-    # config = excelFunc.load_config()
 
     config = excelFunc.load_config()
 
-    if not config['PATHS']['input_path'] == '' and not config['PATHS']['output_path'] == '' and not config['PATHS']['base_path'] == '' and not config['PATHS']['network_security_config_path'] == '' and not config['PATHS']['network_security_config_with_r_path'] == '':
-        excel_input_path = config['PATHS']['input_path']
-        excel_output_path = config['PATHS']['output_path']
-        base_path = config['PATHS']['base_path']
-        network_security_config_path = config['PATHS']['network_security_config_path']    
-        network_security_config_with_r_path = config['PATHS']['network_security_config_with_r_path']
+    (excel_input_path,
+     excel_output_path, 
+     base_path, 
+     network_security_config_path, 
+     network_security_config_with_r_path) = excelFunc.initialize_paths(config)
 
-        print(f"사용할 입력 파일 경로: {excel_input_path}")
-        print(f"사용할 출력 파일 경로: {excel_output_path}")
-        print(f"사용할 Base 폴더 경로: {base_path}")
-        print(f"사용할 network_security_config 경로: {network_security_config_path}")
-        print(f"사용할 network_security_config_with_r_path 경로: {network_security_config_with_r_path}")
-
-    
-    else:
-        config = excelFunc.set_paths_gui()
-        excel_input_path = config['PATHS']['input_path']
-        excel_output_path = config['PATHS']['output_path']
-        base_path = config['PATHS']['base_path']
-        network_security_config_path = config['PATHS']['network_security_config_path']    
-        network_security_config_with_r_path = config['PATHS']['network_security_config_with_r_path']
-
-        print(f"사용할 입력 파일 경로: {excel_input_path}")
-        print(f"사용할 출력 파일 경로: {excel_output_path}")
-        print(f"사용할 Base 폴더 경로: {base_path}")
-        print(f"사용할 network_security_config 경로: {network_security_config_path}")
-        print(f"사용할 network_security_config_with_r_path 경로: {network_security_config_with_r_path}")
-
-    global error
-    error = 'none'    
     startPoint, endPoint, ws = excelFunc.excelStartPoint(excel_input_path)
     
 
 
     for row in range(startPoint, endPoint + 1, 1):
         try: 
-            print("\n\n\n\n-----FULL AUTO MITM 실행중-----\n\n\n\n")
+            print("|------------FULL AUTO MITM 실행중------------|")
+
+            error = 'none'    
 
             app_name = ws[f'A{row}'].value
             package_name = ws[f'B{row}'].value
@@ -489,7 +493,7 @@ def main():
                 except:
                     print("--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션 없이 재디컴파일")
 
-                    remove_decompile_fail_output_path(output_path)
+                    remove_build_fail_output_path(output_path)
 
                     output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
 
@@ -511,7 +515,7 @@ def main():
             excelFunc.excelEndPoint(excel_output_path, app_name, None, None, None)
             print("결과는 엑셀으로")
         except Exception as e:
-            print("-------------오류 발생-------------")
+            print("\n-------------오류 발생-------------\n")
             print(e)
             result = '아니오'
             
