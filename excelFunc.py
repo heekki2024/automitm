@@ -346,10 +346,10 @@ def excelStartPoint(input_path):
 
     # 엑셀 불러오기
     wb = openpyxl.load_workbook(input_path)
-    ws = wb['Sheet1']
+    ws = wb['Sheet2']
 
     try:
-        def confirm():
+        def confirm(root):
             nonlocal startPoint, endPoint
             try:
                 startPoint = int(ent1.get())
@@ -357,7 +357,7 @@ def excelStartPoint(input_path):
                 if startPoint > endPoint:
                     messagebox.showerror("입력 오류", "시작점이 끝점보다 수가 적어야 합니다")
                     return  # 잘못된 입력이므로 확인 버튼을 다시 누르도록 함
-                root.quit()
+                root.destroy()
             except ValueError:
                 messagebox.showerror("입력 오류", "숫자를 입력해 주세요")
 
@@ -413,9 +413,9 @@ def excelStartPoint(input_path):
         #확인
 
         btn = tk.Button(root)
-        btn.config(text = '확인')
+        btn.config(text = '확인 및 실행')
 
-        btn.config(command = confirm)
+        btn.config(command=lambda: confirm(root))
         btn.pack()
 
         #파일 경로 변경
@@ -432,7 +432,7 @@ def excelStartPoint(input_path):
 
     return startPoint, endPoint, ws
 
-def excelEndPoint(output_path, app_name, result, error, detail):
+def excelEndPoint(output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, detail):
 
 
     if not output_path:
@@ -442,9 +442,19 @@ def excelEndPoint(output_path, app_name, result, error, detail):
     ws = wb['Sheet1']
 
     last_row = ws.max_row + 1  # 다음에 기록할 행 번호
-    ws[f'A{last_row}'] = app_name
-    ws[f'B{last_row}'] = result
-    ws[f'C{last_row}'] = error
-    ws[f'D{last_row}'] = detail
+
+    ws[f'A{last_row}'] = ranking
+    ws[f'B{last_row}'] = category
+    ws[f'C{last_row}'] = app_name
+    ws[f'D{last_row}'] = package_name
+    ws[f'E{last_row}'] = totaluser
+    ws[f'F{last_row}'] = totaltime
+    ws[f'G{last_row}'] = monthuser
+    ws[f'H{last_row}'] = result
+    ws[f'I{last_row}'] = error
+    ws[f'J{last_row}'] = detail
+
+
+
 
     wb.save(output_path)

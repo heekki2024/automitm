@@ -82,15 +82,14 @@ def get_apk_paths(package_name):
 
 def create_package_directory(package_name, base_dir):
     try:
-        # 첫 사용전 testing폴더 경로 바꾸기
-        # base_dir = "C:\\Users\\BSJ\\Desktop\\testing"
-        # base_dir = "C:\\Users\\xten\\Desktop\\testing"
 
         package_dir = os.path.join(base_dir, package_name)
         os.makedirs(package_dir, exist_ok=True)
         print(f"{package_dir} 폴더가 생성되었습니다.")
         return package_dir
     except Exception as e:
+        global error
+        error = f"{package_dir} 폴더 생성 중 오류 발생: {e}"
         print(f"{package_dir} 폴더 생성 중 오류 발생: {e}")
         raise e
 
@@ -102,6 +101,8 @@ def pull_apks(apk_files, package_dir, package_name):
             print("APK 파일 추출이 완료되었습니다.")
         except subprocess.CalledProcessError as e:
             print(f"파일 추출 실패")
+            global error
+            error = '파일 추출 실패'        
             raise e
         
 
@@ -116,6 +117,8 @@ def merge_apks(package_dir):
         return merged_apk_path
     except subprocess.CalledProcessError as e:
         print(f"파일 MERGE 실패")
+        global error
+        error = '파일 MERGE 실패'        
         raise e
 
 def decompile_merged_apk(merged_apk_path, package_dir):
@@ -365,7 +368,7 @@ def recompile_merged_apk(output_path, package_dir):
         subprocess.run(['java', '-jar', 'C:\\Windows\\apktool.jar', 'b', output_path, '-o', new_merged_path], check=True)
         print("리컴파일에 성공하였습니다.")
     except subprocess.CalledProcessError as e:
-        print("리컴파일에 실패했습니다. 프로그램을 종료합니다.")
+        print("리컴파일에 실패했습니다")
 
         global error
         error = '리컴파일 실패'
@@ -432,7 +435,7 @@ def install_signed_apks(package_dir):
 
         raise e
 
-global e
+error
 def main():
 
     config = excelFunc.load_config()
@@ -446,16 +449,19 @@ def main():
     startPoint, endPoint, ws = excelFunc.excelStartPoint(excel_input_path)
     
 
-
+    global error
     for row in range(startPoint, endPoint + 1, 1):
         try: 
-            print("|------------FULL AUTO MITM 실행중------------|")
+            print("\n|------------FULL AUTO MITM 실행중------------|\n")
 
             error = 'none'    
-
-            app_name = ws[f'A{row}'].value
-            package_name = ws[f'B{row}'].value
-
+            ranking =  ws[f'A{row}'].value
+            category = ws[f'B{row}'].value
+            app_name = ws[f'C{row}'].value
+            package_name = ws[f'D{row}'].value
+            totaluser = ws[f'E{row}'].value
+            totaltime = ws[f'F{row}'].value
+            monthuser = ws[f'G{row}'].value
             # 값 검증
             if not app_name:
                 raise ValueError(f"행 {row}에서 app_name이 비어있거나 유효하지 않습니다.")
@@ -473,33 +479,57 @@ def main():
 
             # APK 파일들 MERGE
             merged_apk_path = merge_apks(package_dir)
-
+            
             # base.apk 파일 디컴파일
-            output_path = decompile_merged_apk(merged_apk_path, package_dir)
-
-            have_networkSecurityConfig,network_Security_Config_name = check_AndroidManifest(output_path)
-
-            if have_networkSecurityConfig == True:
-                #network_security_config.xml 내용 수정
-                modify_network_security_config(network_Security_Config_name, output_path)
+            try:
+                output_path = decompile_merged_apk(merged_apk_path, package_dir)
                 
+                have_networkSecurityConfig,network_Security_Config_name = check_AndroidManifest(output_path)
+
+                if have_networkSecurityConfig == True:
+                    #network_security_config.xml 내용 수정
+                    modify_network_security_config(network_Security_Config_name, output_path)
+
+                    
+                    try:
+                        recompile_merged_apk(output_path, package_dir)
+                    except:
+                        print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션 없이 재디컴파일\n")
+
+                        remove_build_fail_output_path(output_path)
+
+                        output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
+
+                        copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
+
+                        recompile_merged_apk(output_path, package_dir)
+                elif have_networkSecurityConfig == False:
+                    # network_security_config.xml 파일 교체
+                    copy_network_security_config(output_path, network_security_config_path)
+                    try:
+                        recompile_merged_apk(output_path, package_dir)
+                    except:
+                        print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션 없이 재디컴파일\n")
+
+                        remove_build_fail_output_path(output_path)
+
+                        output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
+
+                        copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
+
+                        recompile_merged_apk(output_path, package_dir)
+        
+
+
+
+            except:
+                print("\n--------디컴파일 실패--------\n")
+
+                output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
+
+                copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
+
                 recompile_merged_apk(output_path, package_dir)
-
-            elif have_networkSecurityConfig == False:
-                # network_security_config.xml 파일 교체
-                copy_network_security_config(output_path, network_security_config_path)
-                try:
-                    recompile_merged_apk(output_path, package_dir)
-                except:
-                    print("--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션 없이 재디컴파일")
-
-                    remove_build_fail_output_path(output_path)
-
-                    output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
-
-                    copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
-
-                    recompile_merged_apk(output_path, package_dir)
 
 
             # APK 파일 서명
@@ -512,14 +542,14 @@ def main():
             install_signed_apks(package_dir)
 
             
-            excelFunc.excelEndPoint(excel_output_path, app_name, None, None, None)
+            excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, None, None, None)
             print("결과는 엑셀으로")
         except Exception as e:
             print("\n-------------오류 발생-------------\n")
             print(e)
             result = '아니오'
             
-            excelFunc.excelEndPoint(excel_output_path,app_name, result, error, str(e))
+            excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, str(e))
             # subprocess.run(['adb', 'uninstall', package_name], check=True)
             # print(f"{package_name} 패키지 삭제 완료.")
 
