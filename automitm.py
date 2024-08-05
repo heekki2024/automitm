@@ -106,7 +106,7 @@ def pull_apks(apk_files, package_dir, package_name):
             raise e
         
 
-def merge_apks(package_dir):
+def merge_apks(package_dir, base_dir):
     try:
 
         merged_apk_path = os.path.join(f"{package_dir}2", "merged.apk")
@@ -116,7 +116,8 @@ def merge_apks(package_dir):
         print("MERGE가 완료되었습니다.")
         return merged_apk_path
     except subprocess.CalledProcessError as e:
-        print(f"파일 MERGE 실패")
+        base_name = os.path.basename(base_dir)
+        print(f"파일 MERGE 실패.\nBase폴더인 {base_name}에 이미 merge된 파일이 있는지 확인하세요")
         global error
         error = '파일 MERGE 실패'        
         raise e
@@ -442,7 +443,7 @@ def main():
 
     (excel_input_path,
      excel_output_path, 
-     base_path, 
+     base_dir, 
      network_security_config_path, 
      network_security_config_with_r_path) = excelFunc.initialize_paths(config)
 
@@ -472,13 +473,13 @@ def main():
             apk_files = get_apk_paths(package_name)
 
             #APK를 담을 폴더 생성
-            package_dir = create_package_directory(package_name, base_path)
+            package_dir = create_package_directory(package_name, base_dir)
 
             # APK 파일 추출
             pull_apks(apk_files, package_dir, package_name)
 
             # APK 파일들 MERGE
-            merged_apk_path = merge_apks(package_dir)
+            merged_apk_path = merge_apks(package_dir, base_dir)
             
             # base.apk 파일 디컴파일
             try:
