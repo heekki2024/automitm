@@ -447,8 +447,16 @@ def main():
      network_security_config_path, 
      network_security_config_with_r_path) = excelFunc.initialize_paths(config)
 
-    startPoint, endPoint, ws = excelFunc.excelStartPoint(excel_input_path)
-    
+    (startPoint,
+     endPoint, 
+     ws, 
+     excel_input_path,
+     excel_output_path,
+     base_dir,
+     network_security_config_path,
+     network_security_config_with_r_path
+     ) = excelFunc.excelStartPoint(excel_input_path)
+  
 
     global error
     for row in range(startPoint, endPoint + 1, 1):
@@ -495,7 +503,7 @@ def main():
                     try:
                         recompile_merged_apk(output_path, package_dir)
                     except:
-                        print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션 없이 재디컴파일\n")
+                        print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
 
                         remove_build_fail_output_path(output_path)
 
@@ -510,7 +518,7 @@ def main():
                     try:
                         recompile_merged_apk(output_path, package_dir)
                     except:
-                        print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션 없이 재디컴파일\n")
+                        print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
 
                         remove_build_fail_output_path(output_path)
 

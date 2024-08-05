@@ -330,9 +330,8 @@ def set_paths_gui(root):
 
         save_config(config)
         set_path_window.destroy()
-        root.deiconify()
-
-
+        return
+        # root.deiconify()
 
     tk.Button(set_path_window, text=" 저장 ", command=save_and_close).grid(row=5, column=0, columnspan=3, pady=10)
 
@@ -340,6 +339,13 @@ def set_paths_gui(root):
 
     # return config['PATHS']['input_path'], config['PATHS']['output_path']
     return config
+
+
+excel_input_path = None
+excel_output_path = None
+base_dir = None
+network_security_config_path = None
+network_security_config_with_r_path = None
 
 def excelStartPoint(input_path):
 
@@ -361,10 +367,18 @@ def excelStartPoint(input_path):
             except ValueError:
                 messagebox.showerror("입력 오류", "숫자를 입력해 주세요")
 
+
+        
         def path_change(root):
+            global excel_input_path, excel_output_path, base_dir, network_security_config_path, network_security_config_with_r_path
             root.withdraw()
             config = set_paths_gui(root)
-            return config
+            (excel_input_path,
+            excel_output_path, 
+            base_dir, 
+            network_security_config_path, 
+            network_security_config_with_r_path) = initialize_paths(config)
+            root.deiconify()  # root 창 다시 표시
 
         startPoint = None
         endPoint = None
@@ -430,7 +444,7 @@ def excelStartPoint(input_path):
     except Exception as e:
         return e
 
-    return startPoint, endPoint, ws
+    return startPoint, endPoint, ws, excel_input_path, excel_output_path, base_dir, network_security_config_path, network_security_config_with_r_path
 
 def excelEndPoint(output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, detail):
 
