@@ -544,7 +544,7 @@ def main():
 
             
             excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, None, None, None)
-            print("결과는 엑셀으로")
+            print(f"결과는 output엑셀인 {excel_output_path}에서 확인")
         except Exception as e:
             print("\n-------------오류 발생-------------\n")
             print(e)
