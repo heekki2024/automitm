@@ -27,7 +27,7 @@ def load_config():
 
         return config
 
-def initialize_paths(config):
+def initialize_paths(config, root):
     if (os.path.exists(config['PATHS']['input_path']) 
         and os.path.exists(config['PATHS']['output_path'])
         and os.path.exists(config['PATHS']['base_path'])
@@ -46,7 +46,7 @@ def initialize_paths(config):
         print(f"사용할 network_security_config_with_r_path 경로: {network_security_config_with_r_path}")
     
     else:
-        config = set_paths_gui()
+        config = set_paths_gui(root)
         excel_input_path = config['PATHS']['input_path']
         excel_output_path = config['PATHS']['output_path']
         base_path = config['PATHS']['base_path']
@@ -347,11 +347,11 @@ base_dir = None
 network_security_config_path = None
 network_security_config_with_r_path = None
 
-def excelStartPoint(input_path):
+def excelStartPoint(excel_input_path, excel_output_path, base_dir, network_security_config_path, network_security_config_with_r_path):
 
 
     # 엑셀 불러오기
-    wb = openpyxl.load_workbook(input_path)
+    wb = openpyxl.load_workbook(excel_input_path)
     ws = wb['Sheet2']
 
     try:
@@ -377,7 +377,7 @@ def excelStartPoint(input_path):
             excel_output_path, 
             base_dir, 
             network_security_config_path, 
-            network_security_config_with_r_path) = initialize_paths(config)
+            network_security_config_with_r_path) = initialize_paths(config, root)
             root.deiconify()  # root 창 다시 표시
 
         startPoint = None

@@ -436,7 +436,7 @@ def install_signed_apks(package_dir):
 
         raise e
 
-error
+error = None
 def main():
 
     config = excelFunc.load_config()
@@ -445,7 +445,7 @@ def main():
      excel_output_path, 
      base_dir, 
      network_security_config_path, 
-     network_security_config_with_r_path) = excelFunc.initialize_paths(config)
+     network_security_config_with_r_path) = excelFunc.initialize_paths(config, None)
 
     (startPoint,
      endPoint, 
@@ -455,7 +455,7 @@ def main():
      base_dir,
      network_security_config_path,
      network_security_config_with_r_path
-     ) = excelFunc.excelStartPoint(excel_input_path)
+     ) = excelFunc.excelStartPoint(excel_input_path, excel_output_path, base_dir, network_security_config_path, network_security_config_with_r_path)
   
 
     global error
