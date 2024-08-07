@@ -27,7 +27,7 @@ def load_config():
 
         return config
 
-def initialize_paths(config, root):
+def initialize_paths(config):
     if (os.path.exists(config['PATHS']['input_path']) 
         and os.path.exists(config['PATHS']['output_path'])
         and os.path.exists(config['PATHS']['base_path'])
@@ -46,7 +46,7 @@ def initialize_paths(config, root):
         print(f"사용할 network_security_config_with_r_path 경로: {network_security_config_with_r_path}")
     
     else:
-        config = set_paths_gui(root)
+        config = first_set_paths_gui()
         excel_input_path = config['PATHS']['input_path']
         excel_output_path = config['PATHS']['output_path']
         base_path = config['PATHS']['base_path']
@@ -322,6 +322,12 @@ def set_paths_gui(root):
             messagebox.showwarning("경고", "모든 경로를 설정해야 합니다.")
             return  # 경로가 지정되지 않은 경우 함수를 종료하고 계속 실행     
            
+        wb = openpyxl.load_workbook(input_var.get())
+
+        if not 'Sheet2' in wb.sheetnames:
+            # root.destroy()
+            print("입력 엑셀의 형식이 잘못되었습니다. 다시 선택하여 주세요")
+
         config['PATHS']['input_path'] = input_var.get()
         config['PATHS']['output_path'] = output_var.get()
         config['PATHS']['base_path'] = base_var.get()
@@ -330,8 +336,11 @@ def set_paths_gui(root):
 
         save_config(config)
         set_path_window.destroy()
+        root.deiconify()
+
         return
-        # root.deiconify()
+
+        
 
     tk.Button(set_path_window, text=" 저장 ", command=save_and_close).grid(row=5, column=0, columnspan=3, pady=10)
 
@@ -352,97 +361,116 @@ def excelStartPoint(excel_input_path, excel_output_path, base_dir, network_secur
 
     # 엑셀 불러오기
     wb = openpyxl.load_workbook(excel_input_path)
-    ws = wb['Sheet2']
+    root = Tk()
+    root.title("앱 패키지 범위 지정")
+    # root.withdraw()
+    if 'Sheet2' in wb.sheetnames:
+        ws = wb['Sheet2']
 
-    try:
-        def confirm(root):
-            nonlocal startPoint, endPoint
-            try:
-                startPoint = int(ent1.get())
-                endPoint = int(ent2.get())
-                if startPoint > endPoint:
-                    messagebox.showerror("입력 오류", "시작점이 끝점보다 수가 적어야 합니다")
-                    return  # 잘못된 입력이므로 확인 버튼을 다시 누르도록 함
-                root.destroy()
-            except ValueError:
-                messagebox.showerror("입력 오류", "숫자를 입력해 주세요")
+        try:
+            def confirm(root):
+                nonlocal startPoint, endPoint
+                try:
+                    startPoint = int(ent1.get())
+                    endPoint = int(ent2.get())
+                    if startPoint > endPoint:
+                        messagebox.showerror("입력 오류", "시작점이 끝점보다 수가 적어야 합니다")
+                        return  # 잘못된 입력이므로 확인 버튼을 다시 누르도록 함
+                    root.destroy()
+                except ValueError:
+                    messagebox.showerror("입력 오류", "숫자를 입력해 주세요")
 
 
-        
-        def path_change(root):
-            global excel_input_path, excel_output_path, base_dir, network_security_config_path, network_security_config_with_r_path
-            root.withdraw()
-            config = set_paths_gui(root)
-            (excel_input_path,
-            excel_output_path, 
-            base_dir, 
-            network_security_config_path, 
-            network_security_config_with_r_path) = initialize_paths(config, root)
-            root.deiconify()  # root 창 다시 표시
-
-        startPoint = None
-        endPoint = None
             
-        root = Tk()
-        root.title("앱 패키지 범위 지정")
-        # root.attributes('-topmost', True)
+            def path_change(root):
+                global excel_input_path, excel_output_path, base_dir, network_security_config_path, network_security_config_with_r_path
+                root.withdraw()
+                config = set_paths_gui(root)
+                (excel_input_path,
+                excel_output_path, 
+                base_dir, 
+                network_security_config_path, 
+                network_security_config_with_r_path) = initialize_paths(config)
+                # root.deiconify()  # root 창 다시 표시
 
-        # 창을 화면 가운데로 이동
-        center_window(root, 400, 300)
-        def on_closing():
-            root.destroy()
-            sys.exit()
-
-        root.protocol("WM_DELETE_WINDOW", on_closing)
-
-        relative_path = os.path.join("images", "logo.png")
-
-        lab_d = tk.Label(root)
-        img = tk.PhotoImage(file = relative_path, master = root)
-        lab_d.config(image = img)
-        lab_d.pack()
-
-
-        #startPoint 라벨
-        lab1 = tk.Label(root)
-        lab1.config(text = 'Excel 시작점')
-        lab1.pack()
-
-        #startPoint 입력창
-        ent1 = tk.Entry(root)
-
-        ent1.pack()
-
-
-        #endPoint 라벨
-        lab2 = tk.Label(root)
-        lab2.config(text = 'Excel 끝점')
-        lab2.pack()
-
-        #endPoint 입력창
-        ent2 = tk.Entry(root)
-
-        ent2.pack()
-
-        #확인
-
-        btn = tk.Button(root)
-        btn.config(text = '확인 및 실행')
-
-        btn.config(command=lambda: confirm(root))
-        btn.pack()
-
-        #파일 경로 변경
-
-        btn = tk.Button(root)
-        btn.config(text = '파일 경로 변경')
-
-        btn.config(command=lambda: path_change(root))
-        btn.pack()
+            startPoint = None
+            endPoint = None
                 
-        root.mainloop()
-    except Exception as e:
-        return e
+
+            # root.attributes('-topmost', True)
+
+            # 창을 화면 가운데로 이동
+            center_window(root, 400, 300)
+            def on_closing():
+                root.destroy()
+                sys.exit()
+
+            root.protocol("WM_DELETE_WINDOW", on_closing)
+
+            relative_path = os.path.join("images", "logo.png")
+
+            lab_d = tk.Label(root)
+            img = tk.PhotoImage(file = relative_path, master = root)
+            lab_d.config(image = img)
+            lab_d.pack()
+
+
+            #startPoint 라벨
+            lab1 = tk.Label(root)
+            lab1.config(text = 'Excel 시작점')
+            lab1.pack()
+
+            #startPoint 입력창
+            ent1 = tk.Entry(root)
+
+            ent1.pack()
+
+
+            #endPoint 라벨
+            lab2 = tk.Label(root)
+            lab2.config(text = 'Excel 끝점')
+            lab2.pack()
+
+            #endPoint 입력창
+            ent2 = tk.Entry(root)
+
+            ent2.pack()
+
+            #확인
+
+            btn = tk.Button(root)
+            btn.config(text = '확인 및 실행')
+
+            btn.config(command=lambda: confirm(root))
+            btn.pack()
+
+            #파일 경로 변경
+
+            btn = tk.Button(root)
+            btn.config(text = '파일 경로 변경')
+
+            btn.config(command=lambda: path_change(root))
+            btn.pack()
+                    
+            root.mainloop()
+        except Exception as e:
+            return e
+    else:
+        root.destroy()
+        print("입력 엑셀의 형식이 잘못되었습니다. 다시 선택하여 주세요")
+        config = first_set_paths_gui()
+        # root.deiconify()
+        excel_input_path = config['PATHS']['input_path']
+        excel_output_path = config['PATHS']['output_path']
+        base_path = config['PATHS']['base_path']
+        network_security_config_path = config['PATHS']['network_security_config_path']    
+        network_security_config_with_r_path = config['PATHS']['network_security_config_with_r_path']
+
+        print(f"사용할 입력 파일 경로: {excel_input_path}")
+        print(f"사용할 출력 파일 경로: {excel_output_path}")
+        print(f"사용할 Base 폴더 경로: {base_path}")
+        print(f"사용할 network_security_config 경로: {network_security_config_path}")
+        print(f"사용할 network_security_config_with_r_path 경로: {network_security_config_with_r_path}")
 
     return startPoint, endPoint, ws, excel_input_path, excel_output_path, base_dir, network_security_config_path, network_security_config_with_r_path
 

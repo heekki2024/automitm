@@ -445,7 +445,7 @@ def main():
      excel_output_path, 
      base_dir, 
      network_security_config_path, 
-     network_security_config_with_r_path) = excelFunc.initialize_paths(config, None)
+     network_security_config_with_r_path) = excelFunc.initialize_paths(config)
 
     (startPoint,
      endPoint, 
