@@ -463,14 +463,19 @@ def main():
         try: 
             print("\n|------------FULL AUTO MITM 실행중------------|\n")
 
-            error = 'none'    
-            ranking =  ws[f'A{row}'].value
-            category = ws[f'B{row}'].value
-            app_name = ws[f'C{row}'].value
-            package_name = ws[f'D{row}'].value
-            totaluser = ws[f'E{row}'].value
-            totaltime = ws[f'F{row}'].value
-            monthuser = ws[f'G{row}'].value
+            error = 'none'   
+
+            ranking = ws[f'A{row}'].value if ws[f'A{row}'].value is not None else ''
+            category = ws[f'B{row}'].value if ws[f'B{row}'].value is not None else ''
+            app_name = ws[f'C{row}'].value if ws[f'C{row}'].value is not None else ''
+            package_name = ws[f'D{row}'].value if ws[f'D{row}'].value is not None else ''
+            totaluser = ws[f'E{row}'].value if ws[f'E{row}'].value is not None else ''
+            totaltime = ws[f'F{row}'].value if ws[f'F{row}'].value is not None else ''
+            monthuser = ws[f'G{row}'].value if ws[f'G{row}'].value is not None else ''
+
+            business_name = ws[f'K{row}'].value if ws[f'K{row}'].value is not None else ''
+            order = ws [f'L{row}'].value if ws[f'L{row}'].value is not None else ''
+
             # 값 검증
             if not app_name:
                 raise ValueError(f"행 {row}에서 app_name이 비어있거나 유효하지 않습니다.")
@@ -551,14 +556,14 @@ def main():
             install_signed_apks(package_dir)
 
             
-            excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, None, None, None)
+            excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, None, None, None, business_name, order)
             print(f"결과는 output엑셀인 {excel_output_path}에서 확인")
         except Exception as e:
             print("\n-------------오류 발생-------------\n")
             print(e)
             result = '아니오'
             
-            excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, str(e))
+            excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, str(e), business_name, order)
             # subprocess.run(['adb', 'uninstall', package_name], check=True)
             # print(f"{package_name} 패키지 삭제 완료.")
 

@@ -324,10 +324,10 @@ def set_paths_gui(root):
            
         wb = openpyxl.load_workbook(input_var.get())
 
-        if not 'Sheet2' in wb.sheetnames:
+        if not 'Sheet1' in wb.sheetnames:
             # root.destroy()
-            print("입력 엑셀의 형식이 잘못되었습니다. 다시 선택하여 주세요")
-
+            messagebox.showwarning("경고", "입력 엑셀의 형식이 잘못되었습니다. 다시 선택하여 주세요.")
+            return
         config['PATHS']['input_path'] = input_var.get()
         config['PATHS']['output_path'] = output_var.get()
         config['PATHS']['base_path'] = base_var.get()
@@ -364,8 +364,8 @@ def excelStartPoint(excel_input_path, excel_output_path, base_dir, network_secur
     root = Tk()
     root.title("앱 패키지 범위 지정")
     # root.withdraw()
-    if 'Sheet2' in wb.sheetnames:
-        ws = wb['Sheet2']
+    if 'Sheet1' in wb.sheetnames:
+        ws = wb['Sheet1']
 
         try:
             def confirm(root):
@@ -457,7 +457,8 @@ def excelStartPoint(excel_input_path, excel_output_path, base_dir, network_secur
             return e
     else:
         root.destroy()
-        print("입력 엑셀의 형식이 잘못되었습니다. 다시 선택하여 주세요")
+        messagebox.showwarning("경고", "입력 엑셀의 형식이 잘못되었습니다. 다시 선택하여 주세요")
+
         config = first_set_paths_gui()
         # root.deiconify()
         excel_input_path = config['PATHS']['input_path']
@@ -474,7 +475,7 @@ def excelStartPoint(excel_input_path, excel_output_path, base_dir, network_secur
 
     return startPoint, endPoint, ws, excel_input_path, excel_output_path, base_dir, network_security_config_path, network_security_config_with_r_path
 
-def excelEndPoint(output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, detail):
+def excelEndPoint(output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, detail, business_name, order):
 
 
     if not output_path:
@@ -495,7 +496,8 @@ def excelEndPoint(output_path, ranking, category, app_name, package_name, totalu
     ws[f'H{last_row}'] = result
     ws[f'I{last_row}'] = error
     ws[f'J{last_row}'] = detail
-
+    ws[f'K{last_row}'] = business_name
+    ws[f'L{last_row}'] = order
 
 
 
