@@ -161,6 +161,57 @@ def decompile_merged_apk_with_r(merged_apk_path, package_dir):
         print(f"{merged_apk_path} 파일을 찾을 수 없습니다.")
         error = '디컴파일 실패 with r'        
         raise e
+    
+    
+
+def decompile_base_apk(package_dir):
+    try:
+        base_apk_path = os.path.join(package_dir, "base.apk")
+        print(base_apk_path)
+        
+        print("r 옵션 없이 디컴파일 하는 중 ...")
+        output_path = f"{package_dir}3"
+        # print(output_path)
+        subprocess.run(['java', '-jar', 'C:\\Windows\\apktool.jar', 'd', '-f', '-s', base_apk_path, '-o', output_path], check=True)
+        print(f"base.apk 디컴파일 완료: {output_path}")
+        return output_path
+    except subprocess.CalledProcessError as e:
+        print(f"{base_apk_path} 디컴파일 중 오류 발생: {e}")
+        global error
+        error = '디컴파일 실패'
+        raise e
+    except Exception as e:
+        error = '디컴파일 실패'
+        print(f"{base_apk_path} 파일을 찾을 수 없습니다.")
+        raise e
+
+
+def decompile_base_apk_with_r(package_dir):
+    try:
+        base_apk_path = os.path.join(package_dir, "base.apk")
+        print(base_apk_path)
+        
+        print("r 옵션이 있는 상태로 디컴파일 하는 중 ...")
+        output_path = f"{base_apk_path}3"
+        # print(output_path)
+        subprocess.run(['java', '-jar', 'C:\\Windows\\apktool.jar', 'd', '-f', 'r', '-s', base_apk_path, '-o', output_path], check=True)
+        print(f"base.apk 디컴파일 완료: {output_path}")
+        return output_path
+    except subprocess.CalledProcessError as e:
+        print(f"{base_apk_path} 디컴파일 중 오류 발생: {e}")
+        global error
+        error = '디컴파일 실패'
+        raise e
+    except Exception as e:
+        error = '디컴파일 실패'
+        print(f"{base_apk_path} 파일을 찾을 수 없습니다.")
+        raise e
+
+
+
+
+
+
 
 def check_AndroidManifest(output_path):
     try:
@@ -382,9 +433,30 @@ def recompile_merged_apk(output_path, package_dir):
         error = '리컴파일 실패'
 
         raise e
+    
+def recompile_base_apk(output_path, package_dir):
+    try:
+        new_base_path = os.path.join(package_dir, "new_base.apk")
+        subprocess.run(['java', '-jar', 'C:\\Windows\\apktool.jar', 'b', output_path, '-o', new_base_path], check=True)
+        print("리컴파일에 성공하였습니다.")
+    except subprocess.CalledProcessError as e:
+        print("리컴파일에 실패했습니다")
+
+        global error
+        error = '리컴파일 실패'
+
+        raise e
+    except Exception as e:
+        print("디컴파일된 apk 파일 경로를 찾지 못하였습니다. 프로그램을 종료합니다")
 
 
-def sign_apks(package_dir):
+        error = '리컴파일 실패'
+
+        raise e
+
+
+
+def sign_merged_apks(package_dir):
     # for file in os.listdir(package_dir):
     #     if file.endswith(".apk"):
             built_apk_path = os.path.join(package_dir, "new_merged.apk")
@@ -394,6 +466,20 @@ def sign_apks(package_dir):
             except subprocess.CalledProcessError as e:
                 print(f"new_merged.apk 파일 서명 실패.")
 
+                global error
+                error = '서명 실패'
+        
+                raise e
+
+def sign_splited_apks(package_dir):
+    for file in os.listdir(package_dir):
+        if file.endswith(".apk") and file != "base.apk":
+            built_apk_path = os.path.join(package_dir, file)
+            try:
+                subprocess.run(['java', '-jar', 'C:\\Windows\\uber-apk-signer-1.3.0.jar', '-a', built_apk_path, '--allowResign'], check=True)
+                print(f"{file} 서명 완료.")
+            except subprocess.CalledProcessError as e:
+                print(f"{file} 서명 실패")
                 global error
                 error = '서명 실패'
         
@@ -411,7 +497,7 @@ def remove_app(package_name):
 
         raise e    
 
-def install_signed_apks(package_dir):
+def install_signed_merged_apk(package_dir):
 
     # 서명된 APK 파일 설치
     apk_files_to_install = []
@@ -421,9 +507,60 @@ def install_signed_apks(package_dir):
     try:
         subprocess.run(['adb', 'install'] + apk_files_to_install, check=True)
         print("서명된 APK 파일 설치 완료.")
+    except subprocess.CalledProcessError as install_error:
+        print("서명된 APK 파일 설치 실패.")
+        print("base apk만 변조 진행")
+
+        global error
+        # error = '설치 실패'
+        
+        
+        print(f"{package_dir}2 폴더 제거")
+        print(f"{package_dir}3 폴더 제거")
+
+        package_dir2 = f"{package_dir}2"
+        package_dir3 = f"{package_dir}3"
+        try:
+            shutil.rmtree(package_dir2)
+        except Exception as e:
+            print(f"Error occurred while removing {package_dir2}: {e}")
+
+        try:
+            shutil.rmtree(package_dir3)
+        except Exception as e:
+            print(f"Error occurred while removing {package_dir3}: {e}")
+
+
+        for filename in os.listdir(package_dir):
+            if 'new_merged' in filename:
+                file_path = os.path.join(package_dir, filename)
+                os.remove(file_path)
+                print(f"Deleted: {file_path}")
+  
+
+        raise install_error
+    
+    
+    except Exception as e:
+        print("설치할 서명된 APK 파일을 찾을 수 없습니다.")
+
+
+        error = '설치 실패'
+
+        raise e
+
+def install_signed_apks(package_dir):
+
+    # 서명된 APK 파일 설치
+    apk_files_to_install = []
+    for file in os.listdir(package_dir):
+        if file.endswith("-aligned-debugSigned.apk") and not file.endswith(".idsig"):
+            apk_files_to_install.append(os.path.join(package_dir, file))
+    try:
+        subprocess.run(['adb', 'install-multiple'] + apk_files_to_install, check=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        print("서명된 APK 파일 설치 완료.")
     except subprocess.CalledProcessError as e:
         print("서명된 APK 파일 설치 실패.")
-
         global error
         error = '설치 실패'
 
@@ -435,6 +572,7 @@ def install_signed_apks(package_dir):
         error = '설치 실패'
 
         raise e
+
 
 error = None
 def main():
@@ -547,17 +685,77 @@ def main():
 
 
             # APK 파일 서명
-            sign_apks(package_dir)
+            sign_merged_apks(package_dir)
 
             #안드로이드 내 앱 삭제
             remove_app(package_name)
+            try:
+                # 서명된 APK 파일 설치
+                install_signed_merged_apk(package_dir)
+            except:
+                try:
+                    output_path = decompile_base_apk(package_dir)
+                    have_networkSecurityConfig,network_Security_Config_name = check_AndroidManifest(output_path)
 
-            # 서명된 APK 파일 설치
+                    if have_networkSecurityConfig == True:
+                        #network_security_config.xml 내용 수정
+                        modify_network_security_config(network_Security_Config_name, output_path)
+
+                        try:
+                            recompile_base_apk(output_path, package_dir)
+                        except:
+
+                            print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
+
+                            remove_build_fail_output_path(output_path)
+
+                            output_path = decompile_base_apk_with_r(package_dir)
+
+                            copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
+
+                            recompile_base_apk(output_path, package_dir)
+                    
+                    elif have_networkSecurityConfig == False:
+                        # network_security_config.xml 파일 교체
+                        copy_network_security_config(output_path, network_security_config_path)
+                        try:
+                            recompile_base_apk(output_path, package_dir)
+                        except:
+                            print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
+
+                            remove_build_fail_output_path(output_path)
+
+                            output_path = decompile_base_apk_with_r(package_dir)
+
+                            copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
+
+                            recompile_base_apk(output_path, package_dir)
+
+
+                except:
+                    print("\n--------디컴파일 실패--------\n")
+
+                    output_path = decompile_base_apk_with_r(package_dir)
+
+                    copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
+
+                    recompile_base_apk(output_path, package_dir)
+
+            sign_splited_apks(package_dir)
+
             install_signed_apks(package_dir)
 
-            
             excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, None, None, None, business_name, order)
             print(f"결과는 output엑셀인 {excel_output_path}에서 확인")
+        except subprocess.CalledProcessError as e: 
+            print("\n-------------오류 발생-------------\n")
+            print(e)
+            result = '아니오'
+            
+            excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, str(e.stderr), business_name, order)
+            # subprocess.run(['adb', 'uninstall', package_name], check=True)
+            # print(f"{package_name} 패키지 삭제 완료.")
+            
         except Exception as e:
             print("\n-------------오류 발생-------------\n")
             print(e)

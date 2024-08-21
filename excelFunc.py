@@ -59,7 +59,7 @@ def initialize_paths(config):
         print(f"사용할 network_security_config 경로: {network_security_config_path}")
         print(f"사용할 network_security_config_with_r_path 경로: {network_security_config_with_r_path}")
 
-    return excel_input_path, excel_output_path, base_path, network_security_config_path, network_security_config_with_r_path
+    return excel_input_path, excel_output_path, os.path.normpath(base_path), network_security_config_path, network_security_config_with_r_path
 
 def save_config(config):
     with open(CONFIG_FILE, 'w') as configfile:
