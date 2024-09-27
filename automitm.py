@@ -1,4 +1,5 @@
 
+from multiprocessing import Value
 import subprocess
 import os
 import shutil
@@ -112,7 +113,7 @@ def merge_apks(package_dir, base_dir):
         merged_apk_path = os.path.join(f"{package_dir}2", "merged.apk")
 
         print("apk들을 Merge 합니다...")
-        subprocess.run(['java', '-jar', r'C:\Windows\APKEditor-1.3.8.jar', 'm', '-i', package_dir , '-o', merged_apk_path], check=True)
+        subprocess.run(['java', '-jar', r'C:\Windows\APKEditor-1.3.9.jar', 'm', '-i', package_dir , '-o', merged_apk_path], check=True)
         print("MERGE가 완료되었습니다.")
         return merged_apk_path
     except subprocess.CalledProcessError as e:
@@ -192,7 +193,7 @@ def decompile_base_apk_with_r(package_dir):
         print(base_apk_path)
         
         print("r 옵션이 있는 상태로 디컴파일 하는 중 ...")
-        output_path = f"{base_apk_path}3"
+        output_path = f"{package_dir}3"
         # print(output_path)
         subprocess.run(['java', '-jar', 'C:\\Windows\\apktool.jar', 'd', '-f', 'r', '-s', base_apk_path, '-o', output_path], check=True)
         print(f"base.apk 디컴파일 완료: {output_path}")
@@ -419,20 +420,20 @@ def recompile_merged_apk(output_path, package_dir):
         new_merged_path = os.path.join(package_dir, "new_merged.apk")
         subprocess.run(['java', '-jar', 'C:\\Windows\\apktool.jar', 'b', output_path, '-o', new_merged_path], check=True)
         print("리컴파일에 성공하였습니다.")
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         print("리컴파일에 실패했습니다")
 
         global error
         error = '리컴파일 실패'
 
-        raise e
-    except Exception as e:
+        raise
+    except Exception:
         print("디컴파일된 apk 파일 경로를 찾지 못하였습니다. 프로그램을 종료합니다")
 
 
         error = '리컴파일 실패'
 
-        raise e
+        raise
     
 def recompile_base_apk(output_path, package_dir):
     try:
@@ -515,29 +516,6 @@ def install_signed_merged_apk(package_dir):
         # error = '설치 실패'
         
         
-        print(f"{package_dir}2 폴더 제거")
-        print(f"{package_dir}3 폴더 제거")
-
-        package_dir2 = f"{package_dir}2"
-        package_dir3 = f"{package_dir}3"
-        try:
-            shutil.rmtree(package_dir2)
-        except Exception as e:
-            print(f"Error occurred while removing {package_dir2}: {e}")
-
-        try:
-            shutil.rmtree(package_dir3)
-        except Exception as e:
-            print(f"Error occurred while removing {package_dir3}: {e}")
-
-
-        for filename in os.listdir(package_dir):
-            if 'new_merged' in filename:
-                file_path = os.path.join(package_dir, filename)
-                os.remove(file_path)
-                print(f"Deleted: {file_path}")
-  
-
         raise install_error
     
     
@@ -594,7 +572,7 @@ def main():
      network_security_config_path,
      network_security_config_with_r_path
      ) = excelFunc.excelStartPoint(excel_input_path, excel_output_path, base_dir, network_security_config_path, network_security_config_with_r_path)
-  
+                          
 
     global error
     for row in range(startPoint, endPoint + 1, 1):
@@ -611,8 +589,8 @@ def main():
             totaltime = ws[f'F{row}'].value if ws[f'F{row}'].value is not None else ''
             monthuser = ws[f'G{row}'].value if ws[f'G{row}'].value is not None else ''
 
-            business_name = ws[f'K{row}'].value if ws[f'K{row}'].value is not None else ''
-            order = ws [f'L{row}'].value if ws[f'L{row}'].value is not None else ''
+            business_name = ws[f'L{row}'].value if ws[f'L{row}'].value is not None else ''
+            order = ws [f'M{row}'].value if ws[f'M{row}'].value is not None else ''
 
             # 값 검증
             if not app_name:
@@ -628,122 +606,237 @@ def main():
 
             # APK 파일 추출
             pull_apks(apk_files, package_dir, package_name)
-
-            # APK 파일들 MERGE
-            merged_apk_path = merge_apks(package_dir, base_dir)
-            
-            # base.apk 파일 디컴파일
-            try:
-                output_path = decompile_merged_apk(merged_apk_path, package_dir)
+            try: 
+                # APK 파일들 MERGE
+                merged_apk_path = merge_apks(package_dir, base_dir)
                 
-                have_networkSecurityConfig,network_Security_Config_name = check_AndroidManifest(output_path)
-
-                if have_networkSecurityConfig == True:
-                    #network_security_config.xml 내용 수정
-                    modify_network_security_config(network_Security_Config_name, output_path)
-
-                    
-                    try:
-                        recompile_merged_apk(output_path, package_dir)
-                    except:
-                        print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
-
-                        remove_build_fail_output_path(output_path)
-
-                        output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
-
-                        copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
-
-                        recompile_merged_apk(output_path, package_dir)
-                elif have_networkSecurityConfig == False:
-                    # network_security_config.xml 파일 교체
-                    copy_network_security_config(output_path, network_security_config_path)
-                    try:
-                        recompile_merged_apk(output_path, package_dir)
-                    except:
-                        print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
-
-                        remove_build_fail_output_path(output_path)
-
-                        output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
-
-                        copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
-
-                        recompile_merged_apk(output_path, package_dir)
-        
-
-
-
-            except:
-                print("\n--------디컴파일 실패--------\n")
-
-                output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
-
-                copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
-
-                recompile_merged_apk(output_path, package_dir)
-
-
-            # APK 파일 서명
-            sign_merged_apks(package_dir)
-
-            #안드로이드 내 앱 삭제
-            remove_app(package_name)
-            try:
-                # 서명된 APK 파일 설치
-                install_signed_merged_apk(package_dir)
-            except:
+                
+                # base.apk 파일 디컴파일
                 try:
-                    output_path = decompile_base_apk(package_dir)
+                    output_path = decompile_merged_apk(merged_apk_path, package_dir)
+                    
                     have_networkSecurityConfig,network_Security_Config_name = check_AndroidManifest(output_path)
+
+                    recompile_done = False  # recompile_merged_apk가 실행되었는지 확인하는 플래그
+
 
                     if have_networkSecurityConfig == True:
                         #network_security_config.xml 내용 수정
                         modify_network_security_config(network_Security_Config_name, output_path)
 
+                        
                         try:
-                            recompile_base_apk(output_path, package_dir)
-                        except:
+                            recompile_merged_apk(output_path, package_dir)
 
+                            recompile_done = True  # 성공적으로 실행되면 플래그를 True로 설정
+
+                        except Exception:
                             print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
 
                             remove_build_fail_output_path(output_path)
+                            
+                            raise RuntimeError
 
-                            output_path = decompile_base_apk_with_r(package_dir)
 
-                            copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
 
-                            recompile_base_apk(output_path, package_dir)
-                    
                     elif have_networkSecurityConfig == False:
                         # network_security_config.xml 파일 교체
                         copy_network_security_config(output_path, network_security_config_path)
                         try:
-                            recompile_base_apk(output_path, package_dir)
-                        except:
+                            recompile_merged_apk(output_path, package_dir)
+
+                            recompile_done = True  # 성공적으로 실행되면 플래그를 True로 설정
+
+                        except Exception:
                             print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
 
                             remove_build_fail_output_path(output_path)
 
-                            output_path = decompile_base_apk_with_r(package_dir)
-
-                            copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
-
-                            recompile_base_apk(output_path, package_dir)
+                            raise RuntimeError
 
 
-                except:
-                    print("\n--------디컴파일 실패--------\n")
 
-                    output_path = decompile_base_apk_with_r(package_dir)
+                except Exception as e:
+
+                    if not isinstance(e, RuntimeError):
+                        print("\n--------에러 발생--------\n")
+
+                    output_path = decompile_merged_apk_with_r(merged_apk_path, package_dir)
 
                     copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
 
-                    recompile_base_apk(output_path, package_dir)
+        
 
-            sign_splited_apks(package_dir)
+        
+                    # APK 파일 서명
 
-            install_signed_apks(package_dir)
+                try:
+                    if not recompile_done:  # recompile_merged_apk가 아직 실행되지 않은 경우에만 실행
+                        recompile_merged_apk(output_path, package_dir)
+
+                    sign_merged_apks(package_dir)
+
+                    #안드로이드 내 앱 삭제
+                    remove_app(package_name)
+
+                    # 서명된 APK 파일 설치
+                    install_signed_merged_apk(package_dir)
+                except Exception as e:
+
+                    print(f"{package_dir}2 폴더 제거")
+                    print(f"{package_dir}3 폴더 제거")
+
+                    package_dir2 = f"{package_dir}2"
+                    package_dir3 = f"{package_dir}3"
+                    try:
+                        shutil.rmtree(package_dir2)
+                    except Exception as e:
+                        print(f"Error occurred while removing {package_dir2}: {e}")
+
+                    try:
+                        shutil.rmtree(package_dir3)
+                    except Exception as e:
+                        print(f"Error occurred while removing {package_dir3}: {e}")
+
+
+                    for filename in os.listdir(package_dir):
+                        if 'new_merged' in filename:
+                            file_path = os.path.join(package_dir, filename)
+                            os.remove(file_path)
+                            print(f"Deleted: {file_path}")
+                
+
+
+                    try:
+                        output_path = decompile_base_apk(package_dir)
+
+                        have_networkSecurityConfig,network_Security_Config_name = check_AndroidManifest(output_path)
+
+                        recompile_done = False  # recompile_merged_apk가 실행되었는지 확인하는 플래그
+
+                        if have_networkSecurityConfig == True:
+                            #network_security_config.xml 내용 수정
+                            modify_network_security_config(network_Security_Config_name, output_path)
+
+                            try:
+                                recompile_base_apk(output_path, package_dir)
+
+                                recompile_done = True  # 성공적으로 실행되면 플래그를 True로 설정
+                                
+                            except:
+
+                                print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
+
+                                remove_build_fail_output_path(output_path)
+
+                                raise RuntimeError
+
+                        elif have_networkSecurityConfig == False:
+                            # network_security_config.xml 파일 교체
+                            copy_network_security_config(output_path, network_security_config_path)
+                            try:
+                                recompile_base_apk(output_path, package_dir)
+
+                                recompile_done = True  # 성공적으로 실행되면 플래그를 True로 설정
+
+
+                            except:
+                                print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
+
+                                remove_build_fail_output_path(output_path)
+
+                                raise RuntimeError
+
+                                
+                    except Exception as e:
+
+                        if not isinstance(e, RuntimeError):
+                            print("\n--------디컴파일 실패--------\n")
+
+                        output_path = decompile_base_apk_with_r(package_dir)
+
+                        copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
+
+                    try:
+                        if not recompile_done:  # recompile_merged_apk가 아직 실행되지 않은 경우에만 실행
+                            recompile_base_apk(output_path, package_dir)
+
+                        sign_splited_apks(package_dir)
+
+                        # 서명된 APK 파일 설치
+                        install_signed_apks(package_dir)
+                    except Exception as e:
+                        print("최종 설치 실패")
+
+                        raise e
+                        # pass
+
+            except:
+                    try:
+                        
+                        output_path = decompile_base_apk(package_dir)
+
+                        have_networkSecurityConfig,network_Security_Config_name = check_AndroidManifest(output_path)
+
+                        recompile_done = False  # recompile_merged_apk가 실행되었는지 확인하는 플래그
+
+                        if have_networkSecurityConfig == True:
+                            #network_security_config.xml 내용 수정
+                            modify_network_security_config(network_Security_Config_name, output_path)
+
+                            try:
+                                recompile_base_apk(output_path, package_dir)
+
+                                recompile_done = True  # 성공적으로 실행되면 플래그를 True로 설정
+                                
+                            except:
+
+                                print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
+
+                                remove_build_fail_output_path(output_path)
+
+                                raise RuntimeError
+
+                        elif have_networkSecurityConfig == False:
+                            # network_security_config.xml 파일 교체
+                            copy_network_security_config(output_path, network_security_config_path)
+                            try:
+                                recompile_base_apk(output_path, package_dir)
+
+                                recompile_done = True  # 성공적으로 실행되면 플래그를 True로 설정
+
+
+                            except:
+                                print("\n--------리컴파일 실패-------- \n디컴파일 된 폴더 삭제 후\n apktool d 의 -r 옵션을 추가해 재디컴파일\n")
+
+                                remove_build_fail_output_path(output_path)
+
+                                raise RuntimeError
+
+                                
+                    except Exception as e:
+
+                        if not isinstance(e, RuntimeError):
+                            print("\n--------디컴파일 실패--------\n")
+
+                        output_path = decompile_base_apk_with_r(package_dir)
+
+                        copy_network_security_config_with_r(output_path, network_security_config_with_r_path)
+
+                    try:
+                        if not recompile_done:  # recompile_merged_apk가 아직 실행되지 않은 경우에만 실행
+                            recompile_base_apk(output_path, package_dir)
+
+                        sign_splited_apks(package_dir)
+
+                        # 서명된 APK 파일 설치
+                        install_signed_apks(package_dir)
+                    except Exception as e:
+                        print("최종 설치 실패")
+
+                        raise e
+                        # pass
+                    
 
             excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, None, None, None, business_name, order)
             print(f"결과는 output엑셀인 {excel_output_path}에서 확인")
@@ -753,8 +846,7 @@ def main():
             result = '아니오'
             
             excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, str(e.stderr), business_name, order)
-            # subprocess.run(['adb', 'uninstall', package_name], check=True)
-            # print(f"{package_name} 패키지 삭제 완료.")
+
             
         except Exception as e:
             print("\n-------------오류 발생-------------\n")
@@ -762,8 +854,6 @@ def main():
             result = '아니오'
             
             excelFunc.excelEndPoint(excel_output_path, ranking, category, app_name, package_name, totaluser, totaltime, monthuser, result, error, str(e), business_name, order)
-            # subprocess.run(['adb', 'uninstall', package_name], check=True)
-            # print(f"{package_name} 패키지 삭제 완료.")
 
 
     sys.exit(0)  # 프로그램 종료
@@ -771,3 +861,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

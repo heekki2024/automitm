@@ -493,11 +493,12 @@ def excelEndPoint(output_path, ranking, category, app_name, package_name, totalu
     ws[f'E{last_row}'] = totaluser
     ws[f'F{last_row}'] = totaltime
     ws[f'G{last_row}'] = monthuser
-    ws[f'H{last_row}'] = result
-    ws[f'I{last_row}'] = error
-    ws[f'J{last_row}'] = detail
-    ws[f'K{last_row}'] = business_name
-    ws[f'L{last_row}'] = order
+
+    ws[f'I{last_row}'] = result
+    ws[f'J{last_row}'] = error
+    ws[f'K{last_row}'] = detail
+    ws[f'L{last_row}'] = business_name
+    ws[f'M{last_row}'] = order
 
 
 
